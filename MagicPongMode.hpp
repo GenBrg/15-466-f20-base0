@@ -5,16 +5,17 @@
 
 #include <glm/glm.hpp>
 
+#include <random>
 #include <vector>
 #include <deque>
 
 /*
- * PongMode is a game mode that implements a single-player game of Pong.
+ * MagicPongMode is a game mode that implements a single-player game of Pong.
  */
 
-struct PongMode : Mode {
-	PongMode();
-	virtual ~PongMode();
+struct MagicPongMode : Mode {
+	MagicPongMode();
+	virtual ~MagicPongMode();
 
 	//functions called by main loop:
 	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
@@ -39,6 +40,32 @@ struct PongMode : Mode {
 	float ai_offset = 0.0f;
 	float ai_offset_update = 0.0f;
 
+	enum class Item : uint8_t {
+		NONE = 0,
+		LONGER_PADDLE,
+		SHORTER_PADDLE,
+		FASTER_BALL
+	};
+
+	Item current_item = Item::NONE;
+	glm::vec2 item_pos = glm::vec2(0.0f, 0.0f);
+
+	
+	static constexpr glm::vec2 item_radius = glm::vec2(0.2f, 0.2f);
+	static constexpr glm::vec2 item_generation_center = glm::vec2(0.0f, 0.0f);
+	static constexpr glm::vec2 item_generation_radius = glm::vec2(5.0f, 3.0f);
+
+	float left_paddle_effect_time = 0.0f;
+	float right_paddle_effect_time = 0.0f;
+	glm::vec2 paddle_radius_modifier = glm::vec2(0.0f, 0.0f);
+
+	float accelerate_ball_effect_time = 0.0f;
+
+	static constexpr float kBallAccelerationModifier = 1.5f;
+
+	glm::vec2 ball_vertical_velocity_modifier = glm::vec2(0.0f, 0.0f);
+
+	bool player_turn = false;
 	//----- pretty rainbow trails -----
 
 	float trail_length = 1.3f;
@@ -54,7 +81,7 @@ struct PongMode : Mode {
 		glm::u8vec4 Color;
 		glm::vec2 TexCoord;
 	};
-	static_assert(sizeof(Vertex) == 4*3 + 1*4 + 4*2, "PongMode::Vertex should be packed");
+	static_assert(sizeof(Vertex) == 4*3 + 1*4 + 4*2, "MagicPongMode::Vertex should be packed");
 
 	//Shader program that draws transformed, vertices tinted with vertex colors:
 	ColorTextureProgram color_texture_program;
@@ -73,4 +100,9 @@ struct PongMode : Mode {
 	// computed in draw() as the inverse of OBJECT_TO_CLIP
 	// (stored here so that the mouse handling code can use it to position the paddle)
 
+	std::mt19937 mt; //mersenne twister pseudo-random number generator
+
+
+private:
+	void GenerateNewItem();
 };
