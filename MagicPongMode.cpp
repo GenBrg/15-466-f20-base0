@@ -8,14 +8,16 @@
 
 #include <iostream>
 
-MagicPongMode::MagicPongMode() {
+MagicPongMode::MagicPongMode()
+{
+	std::random_device rd;
+	mt.seed(rd());
 
 	//set up trail as if ball has been here for 'forever':
 	ball_trail.clear();
 	ball_trail.emplace_back(ball, trail_length);
 	ball_trail.emplace_back(ball, 0.0f);
 
-	 
 	//----- allocate OpenGL resources -----
 	{ //vertex buffer:
 		glGenBuffers(1, &vertex_buffer);
@@ -37,32 +39,32 @@ MagicPongMode::MagicPongMode() {
 		//set up the vertex array object to describe arrays of PongMode::Vertex:
 		glVertexAttribPointer(
 			color_texture_program.Position_vec4, //attribute
-			3, //size
-			GL_FLOAT, //type
-			GL_FALSE, //normalized
-			sizeof(Vertex), //stride
-			(GLbyte *)0 + 0 //offset
+			3,									 //size
+			GL_FLOAT,							 //type
+			GL_FALSE,							 //normalized
+			sizeof(Vertex),						 //stride
+			(GLbyte *)0 + 0						 //offset
 		);
 		glEnableVertexAttribArray(color_texture_program.Position_vec4);
 		//[Note that it is okay to bind a vec3 input to a vec4 attribute -- the w component will be filled with 1.0 automatically]
 
 		glVertexAttribPointer(
 			color_texture_program.Color_vec4, //attribute
-			4, //size
-			GL_UNSIGNED_BYTE, //type
-			GL_TRUE, //normalized
-			sizeof(Vertex), //stride
-			(GLbyte *)0 + 4*3 //offset
+			4,								  //size
+			GL_UNSIGNED_BYTE,				  //type
+			GL_TRUE,						  //normalized
+			sizeof(Vertex),					  //stride
+			(GLbyte *)0 + 4 * 3				  //offset
 		);
 		glEnableVertexAttribArray(color_texture_program.Color_vec4);
 
 		glVertexAttribPointer(
 			color_texture_program.TexCoord_vec2, //attribute
-			2, //size
-			GL_FLOAT, //type
-			GL_FALSE, //normalized
-			sizeof(Vertex), //stride
-			(GLbyte *)0 + 4*3 + 4*1 //offset
+			2,									 //size
+			GL_FLOAT,							 //type
+			GL_FALSE,							 //normalized
+			sizeof(Vertex),						 //stride
+			(GLbyte *)0 + 4 * 3 + 4 * 1			 //offset
 		);
 		glEnableVertexAttribArray(color_texture_program.TexCoord_vec2);
 
@@ -83,8 +85,8 @@ MagicPongMode::MagicPongMode() {
 		glBindTexture(GL_TEXTURE_2D, white_tex);
 
 		//upload a 1x1 image of solid white to the texture:
-		glm::uvec2 size = glm::uvec2(1,1);
-		std::vector< glm::u8vec4 > data(size.x*size.y, glm::u8vec4(0xff, 0xff, 0xff, 0xff));
+		glm::uvec2 size = glm::uvec2(1, 1);
+		std::vector<glm::u8vec4> data(size.x * size.y, glm::u8vec4(0xff, 0xff, 0xff, 0xff));
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
 
 		//set filtering and wrapping parameters:
@@ -106,7 +108,8 @@ MagicPongMode::MagicPongMode() {
 	GenerateNewItem();
 }
 
-MagicPongMode::~MagicPongMode() {
+MagicPongMode::~MagicPongMode()
+{
 
 	//----- free OpenGL resources -----
 	glDeleteBuffers(1, &vertex_buffer);
@@ -119,64 +122,74 @@ MagicPongMode::~MagicPongMode() {
 	white_tex = 0;
 }
 
-bool MagicPongMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
+bool MagicPongMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
+{
 	player_turn = ball_velocity.x > 0;
 
-	if (evt.type == SDL_MOUSEMOTION) {
+	if (evt.type == SDL_MOUSEMOTION)
+	{
 		//convert mouse from window pixels (top-left origin, +y is down) to clip space ([-1,1]x[-1,1], +y is up):
 		glm::vec2 clip_mouse = glm::vec2(
 			(evt.motion.x + 0.5f) / window_size.x * 2.0f - 1.0f,
-			(evt.motion.y + 0.5f) / window_size.y *-2.0f + 1.0f
-		);
+			(evt.motion.y + 0.5f) / window_size.y * -2.0f + 1.0f);
 		left_paddle.y = (clip_to_court * glm::vec3(clip_mouse, 1.0f)).y;
-	} else if (evt.type == SDL_KEYDOWN && player_turn) {
-		switch (evt.key.keysym.sym) {
-			case SDLK_w:
-				ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.0f);
-				break;
-			case SDLK_s:
-				ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.0f);
-				break;
+	}
+	else if (evt.type == SDL_KEYDOWN && player_turn)
+	{
+		switch (evt.key.keysym.sym)
+		{
+		case SDLK_w:
+			ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.0f);
+			break;
+		case SDLK_s:
+			ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.0f);
+			break;
 		}
 	}
 
 	return false;
 }
 
-void MagicPongMode::update(float elapsed) {
+void MagicPongMode::update(float elapsed)
+{
 	//----- paddle update -----
 
 	{ //right player ai:
 		ai_offset_update -= elapsed;
-		if (ai_offset_update < elapsed) {
+		if (ai_offset_update < elapsed)
+		{
 			//update again in [0.5,1.0) seconds:
 			ai_offset_update = (mt() / float(mt.max())) * 0.5f + 0.5f;
 			ai_offset = (mt() / float(mt.max())) * 2.5f - 1.25f;
 		}
-		if (right_paddle.y < ball.y + ai_offset) {
+		if (right_paddle.y < ball.y + ai_offset)
+		{
 			right_paddle.y = std::min(ball.y + ai_offset, right_paddle.y + 2.0f * elapsed);
-		} else {
+		}
+		else
+		{
 			right_paddle.y = std::max(ball.y + ai_offset, right_paddle.y - 2.0f * elapsed);
 		}
 	}
 
 	//clamp paddles to court:
-	right_paddle.y = std::max(right_paddle.y, -court_radius.y + (paddle_radius.y + paddle_radius_modifier.y));
-	right_paddle.y = std::min(right_paddle.y,  court_radius.y - (paddle_radius.y + paddle_radius_modifier.y));
+	right_paddle.y = std::max(right_paddle.y, -court_radius.y + (paddle_radius.y + right_paddle_radius_modifier.y));
+	right_paddle.y = std::min(right_paddle.y, court_radius.y - (paddle_radius.y + right_paddle_radius_modifier.y));
 
-	left_paddle.y = std::max(left_paddle.y, -court_radius.y + (paddle_radius.y + paddle_radius_modifier.y));
-	left_paddle.y = std::min(left_paddle.y,  court_radius.y - (paddle_radius.y + paddle_radius_modifier.y));
+	left_paddle.y = std::max(left_paddle.y, -court_radius.y + (paddle_radius.y + left_paddle_radius_modifier.y));
+	left_paddle.y = std::min(left_paddle.y, court_radius.y - (paddle_radius.y + left_paddle_radius_modifier.y));
 
 	//----- ball update -----
 
 	//speed of ball doubles every four points:
 	float speed_multiplier = 4.0f * std::pow(2.0f, (left_score + right_score) / 4.0f);
 
-	if (accelerate_ball_effect_time > 0.0f) {
+	if (accelerate_ball_effect_time > 0.0f)
+	{
 		speed_multiplier *= kBallAccelerationModifier;
 		accelerate_ball_effect_time = std::max(0.0f, accelerate_ball_effect_time - elapsed);
 	}
-	
+
 	//velocity cap, though (otherwise ball can pass through paddles):
 	speed_multiplier = std::min(speed_multiplier, 10.0f);
 
@@ -184,39 +197,42 @@ void MagicPongMode::update(float elapsed) {
 	ball_vertical_velocity_modifier = glm::vec2(0.0f, 0.0f);
 
 	//---- collision handling ----
-	auto segment_overlapping_test = [](float x1, float x2, float y1, float y2) {
-		return (y1 < x2) && (x1 < y2);
-	};
-
-	auto rect_rect_collision_test = [&segment_overlapping_test](glm::vec2 const &rec1_center, glm::vec2 const &rec1_radius, glm::vec2 const &rec2_center, glm::vec2 const &rec2_radius) {
-		return segment_overlapping_test(rec1_center.x - rec1_radius.x, rec1_center.x + rec1_radius.x, rec2_center.x - rec2_radius.x, rec2_center.x + rec2_radius.x) &&
-		segment_overlapping_test(rec1_center.y - rec1_radius.y, rec1_center.y + rec1_radius.y, rec2_center.y - rec2_radius.y, rec2_center.y + rec2_radius.y);
-	};
-
 	//paddles:
 	auto paddle_vs_ball = [this](glm::vec2 const &paddle) {
+		const glm::vec2& paddle_radius_modifier = player_turn ? left_paddle_radius_modifier : right_paddle_radius_modifier;
+
 		//compute area of overlap:
 		glm::vec2 min = glm::max(paddle - (paddle_radius + paddle_radius_modifier), ball - ball_radius);
 		glm::vec2 max = glm::min(paddle + (paddle_radius + paddle_radius_modifier), ball + ball_radius);
 
 		//if no overlap, no collision:
-		if (min.x > max.x || min.y > max.y) return;
+		if (min.x > max.x || min.y > max.y)
+			return;
 
-		if (max.x - min.x > max.y - min.y) {
+		if (max.x - min.x > max.y - min.y)
+		{
 			//wider overlap in x => bounce in y direction:
-			if (ball.y > paddle.y) {
+			if (ball.y > paddle.y)
+			{
 				ball.y = paddle.y + (paddle_radius.y + paddle_radius_modifier.y) + ball_radius.y;
 				ball_velocity.y = std::abs(ball_velocity.y);
-			} else {
+			}
+			else
+			{
 				ball.y = paddle.y - (paddle_radius.y + paddle_radius_modifier.y) - ball_radius.y;
 				ball_velocity.y = -std::abs(ball_velocity.y);
 			}
-		} else {
+		}
+		else
+		{
 			//wider overlap in y => bounce in x direction:
-			if (ball.x > paddle.x) {
+			if (ball.x > paddle.x)
+			{
 				ball.x = paddle.x + paddle_radius.x + ball_radius.x;
 				ball_velocity.x = std::abs(ball_velocity.x);
-			} else {
+			}
+			else
+			{
 				ball.x = paddle.x - paddle_radius.x - ball_radius.x;
 				ball_velocity.x = -std::abs(ball_velocity.x);
 			}
@@ -229,40 +245,115 @@ void MagicPongMode::update(float elapsed) {
 	paddle_vs_ball(right_paddle);
 
 	//court walls:
-	if (ball.y > court_radius.y - ball_radius.y) {
+	if (ball.y > court_radius.y - ball_radius.y)
+	{
 		ball.y = court_radius.y - ball_radius.y;
-		if (ball_velocity.y > 0.0f) {
+		if (ball_velocity.y > 0.0f)
+		{
 			ball_velocity.y = -ball_velocity.y;
 		}
 	}
-	if (ball.y < -court_radius.y + ball_radius.y) {
+	if (ball.y < -court_radius.y + ball_radius.y)
+	{
 		ball.y = -court_radius.y + ball_radius.y;
-		if (ball_velocity.y < 0.0f) {
+		if (ball_velocity.y < 0.0f)
+		{
 			ball_velocity.y = -ball_velocity.y;
 		}
 	}
 
-	if (ball.x > court_radius.x - ball_radius.x) {
+	if (ball.x > court_radius.x - ball_radius.x)
+	{
 		ball.x = court_radius.x - ball_radius.x;
-		if (ball_velocity.x > 0.0f) {
+		if (ball_velocity.x > 0.0f)
+		{
 			ball_velocity.x = -ball_velocity.x;
 			left_score += 1;
 		}
 	}
-	if (ball.x < -court_radius.x + ball_radius.x) {
+	if (ball.x < -court_radius.x + ball_radius.x)
+	{
 		ball.x = -court_radius.x + ball_radius.x;
-		if (ball_velocity.x < 0.0f) {
+		if (ball_velocity.x < 0.0f)
+		{
 			ball_velocity.x = -ball_velocity.x;
 			right_score += 1;
 		}
 	}
 
 	// items:
+	auto get_item = [this, elapsed]() {
+		switch (current_item)
+		{
+		case Item::FASTER_BALL:
+			accelerate_ball_effect_time = 3.0f;
+			break;
+		case Item::LONGER_PADDLE:
+			if (player_turn)
+			{
+				left_paddle_effect_time = 3.0f;
+				left_paddle_radius_modifier = glm::vec2(0.0f, 0.5f);
+			}
+			else
+			{
+				right_paddle_effect_time = 3.0f;
+				right_paddle_radius_modifier = glm::vec2(0.0f, 0.5f);
+			}
+			break;
+		case Item::SHORTER_PADDLE:
+			if (player_turn)
+			{
+				left_paddle_effect_time = 3.0f;
+				left_paddle_radius_modifier = glm::vec2(0.0f, -0.5f);
+			}
+			else
+			{
+				right_paddle_effect_time = 3.0f;
+				right_paddle_radius_modifier = glm::vec2(0.0f, -0.5f);
+			}
+			break;
+		}
+	};
+
+	auto update_item_effect = [this, elapsed]() {
+		accelerate_ball_effect_time = std::max(0.0f, accelerate_ball_effect_time - elapsed);
+
+		if (left_paddle_effect_time > 0.0f) {
+			left_paddle_effect_time = std::max(0.0f, left_paddle_effect_time - elapsed);
+			if (left_paddle_effect_time <= 0.0f) {
+				left_paddle_radius_modifier = glm::vec2(0.0f, 0.0f);
+			}
+		}
+
+		if (right_paddle_effect_time > 0.0f) {
+			right_paddle_effect_time = std::max(0.0f, right_paddle_effect_time - elapsed);
+			if (right_paddle_effect_time <= 0.0f) {
+				right_paddle_radius_modifier = glm::vec2(0.0f, 0.0f);
+			}
+		}
+	};
+
+	auto item_decay = [this, elapsed]() {
+		item_remain_time -= elapsed;
+		if (item_remain_time <= 0.0f) {
+			GenerateNewItem();
+		}
+	};
+
+	update_item_effect();
+	item_decay();
+
+	if (current_item != Item::NONE && RectRectCollisionTest(ball, ball_radius, item_pos, item_radius))
+	{
+		get_item();
+		GenerateNewItem();
+	}
 
 	//----- rainbow trails -----
 
 	//age up all locations in ball trail:
-	for (auto &t : ball_trail) {
+	for (auto &t : ball_trail)
+	{
 		t.z += elapsed;
 	}
 	//store fresh location at back of ball trail:
@@ -270,31 +361,46 @@ void MagicPongMode::update(float elapsed) {
 
 	//trim any too-old locations from back of trail:
 	//NOTE: since trail drawing interpolates between points, only removes back element if second-to-back element is too old:
-	while (ball_trail.size() >= 2 && ball_trail[1].z > trail_length) {
+	while (ball_trail.size() >= 2 && ball_trail[1].z > trail_length)
+	{
 		ball_trail.pop_front();
 	}
 }
 
-void MagicPongMode::draw(glm::uvec2 const &drawable_size) {
-	//some nice colors from the course web page:
-	#define HEX_TO_U8VEC4( HX ) (glm::u8vec4( (HX >> 24) & 0xff, (HX >> 16) & 0xff, (HX >> 8) & 0xff, (HX) & 0xff ))
+void MagicPongMode::draw(glm::uvec2 const &drawable_size)
+{
+//some nice colors from the course web page:
+#define HEX_TO_U8VEC4(HX) (glm::u8vec4((HX >> 24) & 0xff, (HX >> 16) & 0xff, (HX >> 8) & 0xff, (HX)&0xff))
 	const glm::u8vec4 bg_color = HEX_TO_U8VEC4(0x171714ff);
 	const glm::u8vec4 fg_color = HEX_TO_U8VEC4(0xd1bb54ff);
 	const glm::u8vec4 shadow_color = HEX_TO_U8VEC4(0x604d29ff);
-	const std::vector< glm::u8vec4 > rainbow_colors = {
-		HEX_TO_U8VEC4(0x604d29ff), HEX_TO_U8VEC4(0x624f29fc), HEX_TO_U8VEC4(0x69542df2),
-		HEX_TO_U8VEC4(0x6a552df1), HEX_TO_U8VEC4(0x6b562ef0), HEX_TO_U8VEC4(0x6b562ef0),
-		HEX_TO_U8VEC4(0x6d572eed), HEX_TO_U8VEC4(0x6f592feb), HEX_TO_U8VEC4(0x725b31e7),
-		HEX_TO_U8VEC4(0x745d31e3), HEX_TO_U8VEC4(0x755e32e0), HEX_TO_U8VEC4(0x765f33de),
-		HEX_TO_U8VEC4(0x7a6234d8), HEX_TO_U8VEC4(0x826838ca), HEX_TO_U8VEC4(0x977840a4),
-		HEX_TO_U8VEC4(0x96773fa5), HEX_TO_U8VEC4(0xa07f4493), HEX_TO_U8VEC4(0xa1814590),
-		HEX_TO_U8VEC4(0x9e7e4496), HEX_TO_U8VEC4(0xa6844887), HEX_TO_U8VEC4(0xa9864884),
+	const std::vector<glm::u8vec4> rainbow_colors = {
+		HEX_TO_U8VEC4(0x604d29ff),
+		HEX_TO_U8VEC4(0x624f29fc),
+		HEX_TO_U8VEC4(0x69542df2),
+		HEX_TO_U8VEC4(0x6a552df1),
+		HEX_TO_U8VEC4(0x6b562ef0),
+		HEX_TO_U8VEC4(0x6b562ef0),
+		HEX_TO_U8VEC4(0x6d572eed),
+		HEX_TO_U8VEC4(0x6f592feb),
+		HEX_TO_U8VEC4(0x725b31e7),
+		HEX_TO_U8VEC4(0x745d31e3),
+		HEX_TO_U8VEC4(0x755e32e0),
+		HEX_TO_U8VEC4(0x765f33de),
+		HEX_TO_U8VEC4(0x7a6234d8),
+		HEX_TO_U8VEC4(0x826838ca),
+		HEX_TO_U8VEC4(0x977840a4),
+		HEX_TO_U8VEC4(0x96773fa5),
+		HEX_TO_U8VEC4(0xa07f4493),
+		HEX_TO_U8VEC4(0xa1814590),
+		HEX_TO_U8VEC4(0x9e7e4496),
+		HEX_TO_U8VEC4(0xa6844887),
+		HEX_TO_U8VEC4(0xa9864884),
 		HEX_TO_U8VEC4(0xad8a4a7c),
 	};
-	const std::vector< glm::u8vec4 > item_colors = {
-		HEX_TO_U8VEC4(0x604d29ff), HEX_TO_U8VEC4(0x624f29ff), HEX_TO_U8VEC4(0x69542dff)
-	};
-	#undef HEX_TO_U8VEC4
+	const std::vector<glm::u8vec4> item_colors = {
+		HEX_TO_U8VEC4(0x9eff0cff), HEX_TO_U8VEC4(0xff2d0cff), HEX_TO_U8VEC4(0xebfc02ff)};
+#undef HEX_TO_U8VEC4
 
 	//other useful drawing constants:
 	const float wall_radius = 0.05f;
@@ -304,46 +410,50 @@ void MagicPongMode::draw(glm::uvec2 const &drawable_size) {
 	//---- compute vertices to draw ----
 
 	//vertices will be accumulated into this list and then uploaded+drawn at the end of this function:
-	std::vector< Vertex > vertices;
+	std::vector<Vertex> vertices;
 
 	//inline helper function for rectangle drawing:
 	auto draw_rectangle = [&vertices](glm::vec2 const &center, glm::vec2 const &radius, glm::u8vec4 const &color) {
 		//draw rectangle as two CCW-oriented triangles:
-		vertices.emplace_back(glm::vec3(center.x-radius.x, center.y-radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
-		vertices.emplace_back(glm::vec3(center.x+radius.x, center.y-radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
-		vertices.emplace_back(glm::vec3(center.x+radius.x, center.y+radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+		vertices.emplace_back(glm::vec3(center.x - radius.x, center.y - radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+		vertices.emplace_back(glm::vec3(center.x + radius.x, center.y - radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+		vertices.emplace_back(glm::vec3(center.x + radius.x, center.y + radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
 
-		vertices.emplace_back(glm::vec3(center.x-radius.x, center.y-radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
-		vertices.emplace_back(glm::vec3(center.x+radius.x, center.y+radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
-		vertices.emplace_back(glm::vec3(center.x-radius.x, center.y+radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+		vertices.emplace_back(glm::vec3(center.x - radius.x, center.y - radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+		vertices.emplace_back(glm::vec3(center.x + radius.x, center.y + radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+		vertices.emplace_back(glm::vec3(center.x - radius.x, center.y + radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
 	};
 
 	//shadows for everything (except the trail):
 
-	glm::vec2 s = glm::vec2(0.0f,-shadow_offset);
+	glm::vec2 s = glm::vec2(0.0f, -shadow_offset);
 
-	draw_rectangle(glm::vec2(-court_radius.x-wall_radius, 0.0f)+s, glm::vec2(wall_radius, court_radius.y + 2.0f * wall_radius), shadow_color);
-	draw_rectangle(glm::vec2( court_radius.x+wall_radius, 0.0f)+s, glm::vec2(wall_radius, court_radius.y + 2.0f * wall_radius), shadow_color);
-	draw_rectangle(glm::vec2( 0.0f,-court_radius.y-wall_radius)+s, glm::vec2(court_radius.x, wall_radius), shadow_color);
-	draw_rectangle(glm::vec2( 0.0f, court_radius.y+wall_radius)+s, glm::vec2(court_radius.x, wall_radius), shadow_color);
-	draw_rectangle(left_paddle+s, paddle_radius + paddle_radius_modifier, shadow_color);
-	draw_rectangle(right_paddle+s, paddle_radius + paddle_radius_modifier, shadow_color);
-	draw_rectangle(ball+s, ball_radius, shadow_color);
+	draw_rectangle(glm::vec2(-court_radius.x - wall_radius, 0.0f) + s, glm::vec2(wall_radius, court_radius.y + 2.0f * wall_radius), shadow_color);
+	draw_rectangle(glm::vec2(court_radius.x + wall_radius, 0.0f) + s, glm::vec2(wall_radius, court_radius.y + 2.0f * wall_radius), shadow_color);
+	draw_rectangle(glm::vec2(0.0f, -court_radius.y - wall_radius) + s, glm::vec2(court_radius.x, wall_radius), shadow_color);
+	draw_rectangle(glm::vec2(0.0f, court_radius.y + wall_radius) + s, glm::vec2(court_radius.x, wall_radius), shadow_color);
+	draw_rectangle(left_paddle + s, paddle_radius + left_paddle_radius_modifier, shadow_color);
+	draw_rectangle(right_paddle + s, paddle_radius + right_paddle_radius_modifier, shadow_color);
+	draw_rectangle(ball + s, ball_radius, shadow_color);
 
 	//ball's trail:
-	if (ball_trail.size() >= 2) {
+	if (ball_trail.size() >= 2)
+	{
 		//start ti at second element so there is always something before it to interpolate from:
-		std::deque< glm::vec3 >::iterator ti = ball_trail.begin() + 1;
+		std::deque<glm::vec3>::iterator ti = ball_trail.begin() + 1;
 		//draw trail from oldest-to-newest:
-		for (uint32_t i = uint32_t(rainbow_colors.size())-1; i < rainbow_colors.size(); --i) {
+		for (uint32_t i = uint32_t(rainbow_colors.size()) - 1; i < rainbow_colors.size(); --i)
+		{
 			//time at which to draw the trail element:
 			float t = (i + 1) / float(rainbow_colors.size()) * trail_length;
 			//advance ti until 'just before' t:
-			while (ti != ball_trail.end() && ti->z > t) ++ti;
+			while (ti != ball_trail.end() && ti->z > t)
+				++ti;
 			//if we ran out of tail, stop drawing:
-			if (ti == ball_trail.end()) break;
+			if (ti == ball_trail.end())
+				break;
 			//interpolate between previous and current trail point to the correct time:
-			glm::vec3 a = *(ti-1);
+			glm::vec3 a = *(ti - 1);
 			glm::vec3 b = *(ti);
 			glm::vec2 at = (t - a.z) / (b.z - a.z) * (glm::vec2(b) - glm::vec2(a)) + glm::vec2(a);
 			//draw:
@@ -354,46 +464,44 @@ void MagicPongMode::draw(glm::uvec2 const &drawable_size) {
 	//solid objects:
 
 	//walls:
-	draw_rectangle(glm::vec2(-court_radius.x-wall_radius, 0.0f), glm::vec2(wall_radius, court_radius.y + 2.0f * wall_radius), fg_color);
-	draw_rectangle(glm::vec2( court_radius.x+wall_radius, 0.0f), glm::vec2(wall_radius, court_radius.y + 2.0f * wall_radius), fg_color);
-	draw_rectangle(glm::vec2( 0.0f,-court_radius.y-wall_radius), glm::vec2(court_radius.x, wall_radius), fg_color);
-	draw_rectangle(glm::vec2( 0.0f, court_radius.y+wall_radius), glm::vec2(court_radius.x, wall_radius), fg_color);
+	draw_rectangle(glm::vec2(-court_radius.x - wall_radius, 0.0f), glm::vec2(wall_radius, court_radius.y + 2.0f * wall_radius), fg_color);
+	draw_rectangle(glm::vec2(court_radius.x + wall_radius, 0.0f), glm::vec2(wall_radius, court_radius.y + 2.0f * wall_radius), fg_color);
+	draw_rectangle(glm::vec2(0.0f, -court_radius.y - wall_radius), glm::vec2(court_radius.x, wall_radius), fg_color);
+	draw_rectangle(glm::vec2(0.0f, court_radius.y + wall_radius), glm::vec2(court_radius.x, wall_radius), fg_color);
 
 	//paddles:
-	draw_rectangle(left_paddle, paddle_radius + paddle_radius_modifier, fg_color);
-	draw_rectangle(right_paddle, paddle_radius + paddle_radius_modifier, fg_color);
-	
+	draw_rectangle(left_paddle, paddle_radius + left_paddle_radius_modifier, fg_color);
+	draw_rectangle(right_paddle, paddle_radius + right_paddle_radius_modifier, fg_color);
 
 	//ball:
 	draw_rectangle(ball, ball_radius, fg_color);
 
 	//item:
-	if (current_item != Item::NONE) {
+	if (current_item != Item::NONE)
+	{
 		draw_rectangle(item_pos, item_radius, item_colors[static_cast<int>(current_item) - 1]);
 	}
 
 	//scores:
 	glm::vec2 score_radius = glm::vec2(0.1f, 0.1f);
-	for (uint32_t i = 0; i < left_score; ++i) {
-		draw_rectangle(glm::vec2( -court_radius.x + (2.0f + 3.0f * i) * score_radius.x, court_radius.y + 2.0f * wall_radius + 2.0f * score_radius.y), score_radius, fg_color);
+	for (uint32_t i = 0; i < left_score; ++i)
+	{
+		draw_rectangle(glm::vec2(-court_radius.x + (2.0f + 3.0f * i) * score_radius.x, court_radius.y + 2.0f * wall_radius + 2.0f * score_radius.y), score_radius, fg_color);
 	}
-	for (uint32_t i = 0; i < right_score; ++i) {
-		draw_rectangle(glm::vec2( court_radius.x - (2.0f + 3.0f * i) * score_radius.x, court_radius.y + 2.0f * wall_radius + 2.0f * score_radius.y), score_radius, fg_color);
+	for (uint32_t i = 0; i < right_score; ++i)
+	{
+		draw_rectangle(glm::vec2(court_radius.x - (2.0f + 3.0f * i) * score_radius.x, court_radius.y + 2.0f * wall_radius + 2.0f * score_radius.y), score_radius, fg_color);
 	}
-
-
 
 	//------ compute court-to-window transform ------
 
 	//compute area that should be visible:
 	glm::vec2 scene_min = glm::vec2(
 		-court_radius.x - 2.0f * wall_radius - padding,
-		-court_radius.y - 2.0f * wall_radius - padding
-	);
+		-court_radius.y - 2.0f * wall_radius - padding);
 	glm::vec2 scene_max = glm::vec2(
 		court_radius.x + 2.0f * wall_radius + padding,
-		court_radius.y + 2.0f * wall_radius + 3.0f * score_radius.y + padding
-	);
+		court_radius.y + 2.0f * wall_radius + 3.0f * score_radius.y + padding);
 
 	//compute window aspect ratio:
 	float aspect = drawable_size.x / float(drawable_size.y);
@@ -402,7 +510,7 @@ void MagicPongMode::draw(glm::uvec2 const &drawable_size) {
 	//compute scale factor for court given that...
 	float scale = std::min(
 		(2.0f * aspect) / (scene_max.x - scene_min.x), //... x must fit in [-aspect,aspect] ...
-		(2.0f) / (scene_max.y - scene_min.y) //... y must fit in [-1,1].
+		(2.0f) / (scene_max.y - scene_min.y)		   //... y must fit in [-1,1].
 	);
 
 	glm::vec2 center = 0.5f * (scene_max + scene_min);
@@ -412,8 +520,7 @@ void MagicPongMode::draw(glm::uvec2 const &drawable_size) {
 		glm::vec4(scale / aspect, 0.0f, 0.0f, 0.0f),
 		glm::vec4(0.0f, scale, 0.0f, 0.0f),
 		glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-		glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f)
-	);
+		glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f));
 	//NOTE: glm matrices are specified in *Column-Major* order,
 	// so each line above is specifying a *column* of the matrix(!)
 
@@ -421,8 +528,7 @@ void MagicPongMode::draw(glm::uvec2 const &drawable_size) {
 	clip_to_court = glm::mat3x2(
 		glm::vec2(aspect / scale, 0.0f),
 		glm::vec2(0.0f, 1.0f / scale),
-		glm::vec2(center.x, center.y)
-	);
+		glm::vec2(center.x, center.y));
 
 	//---- actual drawing ----
 
@@ -437,7 +543,7 @@ void MagicPongMode::draw(glm::uvec2 const &drawable_size) {
 	glDisable(GL_DEPTH_TEST);
 
 	//upload vertices to vertex_buffer:
-	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); //set vertex_buffer as current
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);														   //set vertex_buffer as current
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STREAM_DRAW); //upload vertices array
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -465,18 +571,21 @@ void MagicPongMode::draw(glm::uvec2 const &drawable_size) {
 
 	//reset current program to none:
 	glUseProgram(0);
-	
 
 	GL_ERRORS(); //PARANOIA: print errors just in case we did something wrong.
-
 }
 
-void MagicPongMode::GenerateNewItem() {
+void MagicPongMode::GenerateNewItem()
+{
 	std::uniform_int_distribution<> item_category_distrib(1, 3);
 	current_item = static_cast<Item>(item_category_distrib(mt));
 
-	std::uniform_real_distribution<> item_x_pos_distrib(item_generation_center.x - item_generation_radius.x, item_generation_center.x + item_generation_radius.x);
-	std::uniform_real_distribution<> item_y_pos_distrib(item_generation_center.y - item_generation_radius.y, item_generation_center.y + item_generation_radius.y);
-	item_pos.x = static_cast<float>(item_x_pos_distrib(mt));
-	item_pos.y = static_cast<float>(item_y_pos_distrib(mt));
+	do {
+		std::uniform_real_distribution<> item_x_pos_distrib(item_generation_center.x - item_generation_radius.x, item_generation_center.x + item_generation_radius.x);
+		std::uniform_real_distribution<> item_y_pos_distrib(item_generation_center.y - item_generation_radius.y, item_generation_center.y + item_generation_radius.y);
+		item_pos.x = static_cast<float>(item_x_pos_distrib(mt));
+		item_pos.y = static_cast<float>(item_y_pos_distrib(mt));
+	} while(RectRectCollisionTest(ball, ball_radius, item_pos, item_radius));
+	
+	item_remain_time = 10.0f;
 }

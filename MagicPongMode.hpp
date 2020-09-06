@@ -49,6 +49,7 @@ struct MagicPongMode : Mode {
 
 	Item current_item = Item::NONE;
 	glm::vec2 item_pos = glm::vec2(0.0f, 0.0f);
+	float item_remain_time = 10.0f;
 
 	
 	static constexpr glm::vec2 item_radius = glm::vec2(0.2f, 0.2f);
@@ -57,7 +58,8 @@ struct MagicPongMode : Mode {
 
 	float left_paddle_effect_time = 0.0f;
 	float right_paddle_effect_time = 0.0f;
-	glm::vec2 paddle_radius_modifier = glm::vec2(0.0f, 0.0f);
+	glm::vec2 left_paddle_radius_modifier = glm::vec2(0.0f, 0.0f);
+	glm::vec2 right_paddle_radius_modifier = glm::vec2(0.0f, 0.0f);
 
 	float accelerate_ball_effect_time = 0.0f;
 
@@ -102,7 +104,14 @@ struct MagicPongMode : Mode {
 
 	std::mt19937 mt; //mersenne twister pseudo-random number generator
 
-
 private:
 	void GenerateNewItem();
+	bool SegmentOverlappingTest(float x1, float x2, float y1, float y2) {
+		return (y1 < x2) && (x1 < y2);
+	};
+
+	bool RectRectCollisionTest(glm::vec2 const &rec1_center, glm::vec2 const &rec1_radius, glm::vec2 const &rec2_center, glm::vec2 const &rec2_radius) {
+		return SegmentOverlappingTest(rec1_center.x - rec1_radius.x, rec1_center.x + rec1_radius.x, rec2_center.x - rec2_radius.x, rec2_center.x + rec2_radius.x) &&
+			   SegmentOverlappingTest(rec1_center.y - rec1_radius.y, rec1_center.y + rec1_radius.y, rec2_center.y - rec2_radius.y, rec2_center.y + rec2_radius.y);
+	};
 };
