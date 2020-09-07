@@ -1,8 +1,8 @@
-# Drift
+# Magic Pong
 
 Author: Jiasheng Zhou <jiashen2@andrew.cmu.edu>
 
-Design: 
+Design: \
 In the game, you can control the ball when it's your turn and pick up items to enhance your paddle or accelerate the ball.
 
 Screen Shot:
@@ -14,8 +14,8 @@ How To Play:
 Goals: Get the most points!
 
 Controls:
-W: Move the ball up when it's your turn
-S: Move the ball down when it's your turn
+W: Move the ball up when it's your turn\
+S: Move the ball down when it's your turn\
 Mouse: Control paddle position
 
 Items:

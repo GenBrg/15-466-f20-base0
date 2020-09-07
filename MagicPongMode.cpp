@@ -139,10 +139,10 @@ bool MagicPongMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 		switch (evt.key.keysym.sym)
 		{
 		case SDLK_w:
-			ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.0f);
+			ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.5f);
 			break;
 		case SDLK_s:
-			ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.0f);
+			ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.5f);
 			break;
 		}
 	}
