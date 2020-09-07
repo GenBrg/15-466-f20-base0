@@ -130,8 +130,8 @@ bool MagicPongMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 		ball_vertical_velocity_modifier = glm::vec2(0.0f, 0.0f);
 	}
 
-	bool ball_move_up = false;
-	bool ball_move_down = false;
+	static bool ball_move_up = false;
+	static bool ball_move_down = false;
 
 	if (evt.type == SDL_MOUSEMOTION)
 	{
@@ -171,6 +171,8 @@ bool MagicPongMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 			ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.0f);
 		} else if (ball_move_down) {
 			ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.0f);
+		} else {
+			ball_vertical_velocity_modifier = glm::vec2(0.0f, 0.0f);
 		}
 	}
 
