@@ -51,7 +51,6 @@ struct MagicPongMode : Mode {
 	glm::vec2 item_pos = glm::vec2(0.0f, 0.0f);
 	float item_remain_time = 10.0f;
 
-	
 	static constexpr glm::vec2 item_radius = glm::vec2(0.2f, 0.2f);
 	static constexpr glm::vec2 item_generation_center = glm::vec2(0.0f, 0.0f);
 	static constexpr glm::vec2 item_generation_radius = glm::vec2(5.0f, 3.0f);
