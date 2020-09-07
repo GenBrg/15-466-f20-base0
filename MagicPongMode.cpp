@@ -170,6 +170,38 @@ void MagicPongMode::update(float elapsed)
 		{
 			right_paddle.y = std::max(ball.y + ai_offset, right_paddle.y - 2.0f * elapsed);
 		}
+
+		//control the ball
+		if (!player_turn) {
+			if (ball.x > item_pos.x && current_item == Item::LONGER_PADDLE) {
+				//chase item
+				if (ball.y - ball_radius.y > item_pos.y + item_radius.y) {
+					ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.0f);
+				} else if (ball.y + ball_radius.y < item_pos.y - item_radius.y) {
+					ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.0f);
+				}
+			} else {
+				//avoid user paddle and bad item
+				if (SegmentOverlappingTest(ball.y - ball_radius.y, ball.y + ball_radius.y, left_paddle.y - paddle_radius.y, left_paddle.y + paddle_radius.y)) {
+					if (ball.y > 3.9f) {
+						ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.0f);
+					} else if (ball.y < -3.9f) {
+						ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.0f);
+					} else if (ball.y > left_paddle.y) {
+						ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.0f);
+					} else {
+						ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.0f);
+					}
+				} else if (ball.x > item_pos.x && current_item == Item::SHORTER_PADDLE && 
+				SegmentOverlappingTest(ball.y - ball_radius.y, ball.y + ball_radius.y, item_pos.y - item_radius.y, item_pos.y + item_radius.y)) {
+					if (ball.y > 0) {
+						ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.0f);
+					} else {
+						ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.0f);
+					}
+				}
+			}
+		}
 	}
 
 	//clamp paddles to court:
