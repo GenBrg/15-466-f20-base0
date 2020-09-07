@@ -126,6 +126,13 @@ bool MagicPongMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 {
 	player_turn = ball_velocity.x > 0;
 
+	if (!player_turn) {
+		ball_vertical_velocity_modifier = glm::vec2(0.0f, 0.0f);
+	}
+
+	bool ball_move_up = false;
+	bool ball_move_down = false;
+
 	if (evt.type == SDL_MOUSEMOTION)
 	{
 		//convert mouse from window pixels (top-left origin, +y is down) to clip space ([-1,1]x[-1,1], +y is up):
@@ -134,16 +141,36 @@ bool MagicPongMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 			(evt.motion.y + 0.5f) / window_size.y * -2.0f + 1.0f);
 		left_paddle.y = (clip_to_court * glm::vec3(clip_mouse, 1.0f)).y;
 	}
-	else if (evt.type == SDL_KEYDOWN && player_turn)
+	else if (evt.type == SDL_KEYDOWN)
 	{
 		switch (evt.key.keysym.sym)
 		{
 		case SDLK_w:
-			ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.5f);
+			ball_move_up = true;
 			break;
 		case SDLK_s:
-			ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.5f);
+			ball_move_down = true;
 			break;
+		}
+	}
+	else if (evt.type == SDL_KEYUP)
+	{
+		switch (evt.key.keysym.sym)
+		{
+		case SDLK_w:
+			ball_move_up = false;
+			break;
+		case SDLK_s:
+			ball_move_down = false;
+			break;
+		}
+	}
+
+	if (player_turn) {
+		if (ball_move_up) {
+			ball_vertical_velocity_modifier = glm::vec2(0.0f, 1.0f);
+		} else if (ball_move_down) {
+			ball_vertical_velocity_modifier = glm::vec2(0.0f, -1.0f);
 		}
 	}
 
@@ -226,7 +253,6 @@ void MagicPongMode::update(float elapsed)
 	speed_multiplier = std::min(speed_multiplier, 10.0f);
 
 	ball += elapsed * speed_multiplier * (ball_velocity + ball_vertical_velocity_modifier);
-	ball_vertical_velocity_modifier = glm::vec2(0.0f, 0.0f);
 
 	//---- collision handling ----
 	//paddles:
